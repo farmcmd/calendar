@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google 日曆活動產生器</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         body {
@@ -143,7 +143,7 @@
                 
                 <div class="pt-4 mt-2 border-t border-gray-200">
                     <p class="text-xs text-gray-500 flex flex-col items-center gap-1">
-                        <span class="inline-block bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider">V2.6</span>
+                        <span class="inline-block bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider">V2.7 (App Integration)</span>
                         <span>歡迎至 Facebook 粉專「里山餐桌」提出建議</span>
                     </p>
                 </div>
@@ -164,10 +164,40 @@
             
             <!-- Modal Body -->
             <div class="p-6 space-y-4 overflow-y-auto">
-                <p class="text-sm text-gray-500">複製下方訊息發送給朋友，他們點擊連結即可加入行事曆。</p>
+                <p class="text-sm text-gray-500">選擇下方 App 快速傳送，或複製訊息：</p>
                 
+                <!-- Quick App Buttons -->
+                <div class="grid grid-cols-4 gap-2 mb-2">
+                    <a id="btnLine" href="#" target="_blank" class="flex flex-col items-center group">
+                        <div class="w-12 h-12 rounded-full bg-[#06C755] text-white flex items-center justify-center text-xl shadow-md group-hover:scale-110 transition-transform">
+                            <i class="fa-brands fa-line"></i>
+                        </div>
+                        <span class="text-[10px] text-gray-500 mt-1">LINE</span>
+                    </a>
+                    <a id="btnWhatsapp" href="#" target="_blank" class="flex flex-col items-center group">
+                        <div class="w-12 h-12 rounded-full bg-[#25D366] text-white flex items-center justify-center text-xl shadow-md group-hover:scale-110 transition-transform">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </div>
+                        <span class="text-[10px] text-gray-500 mt-1">WhatsApp</span>
+                    </a>
+                    <a id="btnGmail" href="#" target="_blank" class="flex flex-col items-center group">
+                        <div class="w-12 h-12 rounded-full bg-[#EA4335] text-white flex items-center justify-center text-lg shadow-md group-hover:scale-110 transition-transform">
+                            <i class="fa-regular fa-envelope"></i>
+                        </div>
+                        <span class="text-[10px] text-gray-500 mt-1">Gmail</span>
+                    </a>
+                    <button onclick="nativeShare()" class="flex flex-col items-center group">
+                        <div class="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center text-lg shadow-md group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                        </div>
+                        <span class="text-[10px] text-gray-500 mt-1">更多/FB</span>
+                    </button>
+                </div>
+
+                <div class="border-t border-gray-100 my-2"></div>
+
                 <textarea id="shareText" 
-                    class="w-full h-36 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-emerald-500 outline-none resize-none font-mono leading-relaxed"></textarea>
+                    class="w-full h-28 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-700 focus:ring-2 focus:ring-emerald-500 outline-none resize-none font-mono leading-relaxed"></textarea>
                 
                 <!-- Main Copy Button -->
                 <button onclick="copyShareText()" id="copyBtn"
@@ -187,9 +217,6 @@
                         <i class="fa-solid fa-scissors text-orange-500"></i>
                         <span>複製網址並前往 TinyURL</span>
                     </button>
-                    <p class="text-[10px] text-gray-400 mt-2 text-center">
-                        * 將自動複製長網址，請在開啟的頁面貼上即可
-                    </p>
                 </div>
             </div>
         </div>
@@ -207,8 +234,9 @@
             "開始日期....", "聯絡人: ", "活動網址: ", "注意事項:"
         ];
 
-        // Store current URL globally
+        // Store current URL and Data globally
         let currentLongUrl = '';
+        let currentShareData = { title: '', text: '', url: '' };
 
         window.onload = function() {
             // 1. Initialize Time
@@ -237,19 +265,14 @@
                 btn.className = 'tag-btn text-xs bg-gray-100 hover:bg-blue-100 text-gray-600 hover:text-blue-600 py-1 px-3 rounded-full border border-gray-200 transition-all mb-1';
                 btn.textContent = text;
                 btn.onclick = (e) => {
-                    // Prevent form submit behavior if inside form
                     e.preventDefault(); 
                     const input = document.getElementById(targetInputId);
                     
                     if (isTextarea) {
-                        // For details: append with newline
                         input.value = input.value ? input.value + '\n' + text : text;
                     } else {
-                        // For title: append with space
-                        // Optional: Add brackets for certain keywords if desired, currently plain text
                         input.value = input.value ? input.value + ' ' + text : text;
                     }
-                    // Flash effect
                     input.classList.add('bg-blue-50');
                     setTimeout(() => input.classList.remove('bg-blue-50'), 200);
                 };
@@ -328,7 +351,7 @@
 
             currentLongUrl = data.url;
 
-            // Updated message format based on user request
+            // Generate full message text
             let msg = `將訊息快速加入日曆通知\n\n`;
             msg += `📅 活動標題: ${data.title}\n`;
             msg += `⏰ 時間：${formatForDisplay(data.startVal)} - ${formatForDisplay(data.endVal).split(' ')[1]}\n`; 
@@ -337,9 +360,31 @@
             }
             msg += `\n👇 點擊下方連結加入 Google 日曆：\n${data.url}`;
 
+            // Update Textarea
             const textarea = document.getElementById('shareText');
             textarea.value = msg;
 
+            // Update Global Share Data
+            currentShareData = {
+                title: data.title,
+                text: msg,
+                url: data.url
+            };
+
+            // Update App Links
+            const encodedMsg = encodeURIComponent(msg);
+            
+            // LINE
+            document.getElementById('btnLine').href = `https://line.me/R/msg/text/?${encodedMsg}`;
+            
+            // WhatsApp
+            document.getElementById('btnWhatsapp').href = `https://wa.me/?text=${encodedMsg}`;
+            
+            // Gmail
+            const emailSubject = encodeURIComponent(`活動通知：${data.title}`);
+            document.getElementById('btnGmail').href = `mailto:?subject=${emailSubject}&body=${encodedMsg}`;
+
+            // Show Modal
             const modal = document.getElementById('shareModal');
             const content = document.getElementById('modalContent');
             modal.classList.remove('hidden');
@@ -347,6 +392,27 @@
             requestAnimationFrame(() => {
                 content.classList.add('modal-enter-active');
             });
+        }
+
+        // Native Share Function (for Messenger/Others)
+        async function nativeShare() {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: currentShareData.title,
+                        text: currentShareData.text,
+                        // Some apps prefer url field, some prefer it in text. 
+                        // Since our text already has URL, we might omit url field to avoid double links, 
+                        // or keep it for system handling. Let's try text only first as it's safest for formatting.
+                    });
+                } catch (err) {
+                    console.log('Share canceled');
+                }
+            } else {
+                // Fallback for desktop browsers without share API
+                alert("您的瀏覽器不支援系統分享，請手動複製訊息後至 Messenger 貼上。");
+                copyShareText();
+            }
         }
 
         function closeShareModal() {
