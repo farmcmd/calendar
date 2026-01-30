@@ -328,7 +328,9 @@
 
             currentLongUrl = data.url;
 
-            let msg = `📅 活動邀請：${data.title}\n`;
+            // Updated message format based on user request
+            let msg = `將訊息快速加入日曆通知\n\n`;
+            msg += `📅 活動標題: ${data.title}\n`;
             msg += `⏰ 時間：${formatForDisplay(data.startVal)} - ${formatForDisplay(data.endVal).split(' ')[1]}\n`; 
             if(data.details) {
                 msg += `📍 備註：${data.details}\n`;
